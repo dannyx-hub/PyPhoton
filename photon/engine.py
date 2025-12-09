@@ -1,57 +1,131 @@
+# photon/engine.py
 import time
-
-import webview
-import threading
+import json
 import asyncio
-import os
+import threading
 from aiohttp import web
+import webview
+import os
+
+class Hooks:
+    ON_APP_START = "on_app_start"
+    ON_WINDOW_CREATE = "on_window_create"
+    ON_EVENT = "on_event"
+
 
 class Api:
+    """Obiekt dostępny w JavaScript jako window.pywebview.api"""
     def __init__(self, engine):
         self.engine = engine
 
     def send(self, params):
-        event, data = params['event'], params['data']
-        self.engine.js_event.emit(event, data)
+        """
+        window.pywebview.api.send({ event: "hello", data: { msg: "cześć" } })
+        """
+        if not isinstance(params, dict) or "event" not in params:
+            print("[PyPhoton] Błąd: api.send() wymaga {event, data}")
+            return
+
+        # Wrzucamy całą wiadomość do kolejki w Pythonie
+        asyncio.run_coroutine_threadsafe(
+            self.engine.message_queue.put(params),
+            self.engine.loop
+        )
+
 
 class Engine:
     def __init__(self, debug=False, serve=True, port=8000, webroot="web"):
-        self.js_event = asyncio.Event()
-        self.py_event = asyncio.Event()
-        self._webroot = webroot
-        self._port = port
-        self._serve = serve
-        self._server = None
         self.debug = debug
-        self._server_ready = None
+        self._serve = serve
+        self._port = port
+        self._webroot = webroot
+        self._server_ready = False
+        self.loop = None
+
+        self.message_queue = asyncio.Queue()
+
+        self.hooks = {value: [] for key, value in Hooks.__dict__.items()
+                      if not key.startswith("__")}
+
+        from photon.plugins.plugin_manager import PluginManager
+        self.plugins = PluginManager()
+        self.plugins.set_engine(self)
+        self.plugins.discover_plugins()
 
         if serve:
-            threading.Thread(target=self._start_server, daemon=True).start()
+            threading.Thread(target=self._run_server_and_processor, daemon=True).start()
             self._wait_for_server()
+        else:
+            self.loop = asyncio.get_event_loop()
 
-    def _wait_for_server(self, timeout: float = 5.0):
+    def register_hook(self, hook_name, callback):
+        if hook_name in self.hooks:
+            self.hooks[hook_name].append(callback)
+        else:
+            raise ValueError(f"Nieznany hook: {hook_name}")
+
+    def emit_hook(self, hook_name, *args, **kwargs):
+        if hook_name not in self.hooks:
+            return
+
+        for callback in self.hooks[hook_name]:
+            def run():
+                try:
+                    callback(*args, **kwargs)
+                except Exception as e:
+                    print(f"[PyPhoton] Błąd w hooku {hook_name}: {e}")
+            threading.Thread(target=run, daemon=True).start()
+
+    def _wait_for_server(self, timeout: float = 8.0):
         deadline = time.time() + timeout
-        while time.time() < deadline:
-            if self._server_ready:
-                return
-            time.sleep(1)
+        while time.time() < deadline and not self._server_ready:
+            time.sleep(0.1)
+        if not self._server_ready:
+            raise TimeoutError(f"[PyPhoton] Serwer nie uruchomił się na porcie {self._port}")
 
-    def _start_server(self):
-        async def run_server():
+    def _run_server_and_processor(self):
+        async def main():
+            self.loop = asyncio.get_running_loop()
+
             app = web.Application()
-            app.router.add_static('/', self._webroot)
+            app.router.add_static('/', path=self._webroot)
             runner = web.AppRunner(app)
             await runner.setup()
             site = web.TCPSite(runner, '127.0.0.1', self._port)
             await site.start()
             self._server_ready = True
-            print(f"[PyPhoton] Serving on http://127.0.0.1:{self._port}")
+            print(f"[PyPhoton] Serwer działa → http://127.0.0.1:{self._port}")
+
+            await self._start_message_processor()
+
             while True:
                 await asyncio.sleep(3600)
-        asyncio.run(run_server())
 
-    def create_window(self, path="/", title="PyPhoton", width=1000, height=600):
-        url = f"http://127.0.0.1:{self._port}{path}" if self._serve else path
+        asyncio.run(main())
+
+    async def _start_message_processor(self):
+        print("[PyPhoton] Procesor wiadomości uruchomiony")
+        while True:
+            try:
+                message = await self.message_queue.get()
+                event_name = message.get("event")
+                data = message.get("data", {})
+
+                print(f"[PyPhoton] Otrzymano event: {event_name}")
+                self.emit_hook(Hooks.ON_EVENT, event_name, data)
+
+                self.message_queue.task_done()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"[PyPhoton] Błąd przetwarzania wiadomości: {e}")
+
+    def create_window(self, path="/", title="PyPhoton", width=1000, height=700, resizable=True):
+        if self._serve:
+            url = f"http://127.0.0.1:{self._port}{path}"
+        else:
+            url = f"file://{os.path.abspath(os.path.join(self._webroot, path.lstrip('/')))}"
+
         api = Api(self)
 
         window = webview.create_window(
@@ -59,19 +133,27 @@ class Engine:
             url=url,
             width=width,
             height=height,
+            resizable=resizable,
             js_api=api,
-            on_top=False,
+            text_select=True,
         )
 
-        def on_message(message):
-            # {"event": "click", "data": {...}}
-            import json
-            try:
-                data = json.loads(message)
-                self.py_event.set()
-            except:
-                pass
+        @window.expose
+        def pywebview_message(event: str, data=None):
+            if data is None:
+                data = {}
+            message = {"event": event, "data": data}
+            asyncio.run_coroutine_threadsafe(
+                self.message_queue.put(message),
+                self.loop
+            )
+
+        self.emit_hook(Hooks.ON_WINDOW_CREATE, window)
         return window
 
     def run(self):
-        webview.start(debug=self.debug)
+        self.emit_hook(Hooks.ON_APP_START)
+        webview.start(debug=self.debug, http_server=not self._serve)
+
+    # def quit(self):
+    #     webview.destroy_all_windows()
