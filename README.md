@@ -1,69 +1,45 @@
-## PyPhoton
+<div align="center">
 
-### 🌟 Project Description
+# PyPulsar
 
-PyPhoton is a lightweight “Electron-like” Python framework for building modern desktop applications using web technologies (HTML/CSS/JS) while fully integrating with Python.
+[![PyPI](https://img.shields.io/pypi/v/PyPulsar.svg)](https://pypi.org/project/PyPulsar/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Versions](https://img.shields.io/pypi/pyversions/PyPulsar.svg)](https://pypi.org/project/PyPulsar/)
+[![Stars](https://img.shields.io/github/stars/dannyx-hub/PyPulsar.svg)](https://github.com/dannyx-hub/PyPulsar/stargazers)
 
-It is designed for simplicity and performance, and future versions will support a plugin system, enabling dynamic extension of functionality and customization.
+**Modern Python desktop framework** – fast, light, secure. Build native apps with HTML/CSS/JS frontend and Python backend. No Electron bloat, no Rust learning curve.
 
+- 🚀 **Lightning Fast**: ~5-15 MB bundles, <100 MB RAM
+- 🔒 **Secure by Default**: Built-in ACL (Access Control List) for events
+- 🛠️ **Easy CLI**: `pypulsar create my-app && pypulsar dev`
+- 🎨 **Native Feel**: WebView on macOS (Cocoa), Windows (Edge), Linux (GTK)
 
-### ⚡ Features
+</div>
 
-- Runs a local HTTP server for web assets.
-- Creates desktop windows with embedded web pages.
-- Bi-directional communication between Python and JavaScript.
-- Debug mode for easier development.
-- Coming soon: plugin system for dynamic feature extensions.
+## Why PyPulsar?
 
-### 🛠 Installation
+Tired of Electron's 200+ MB RAM? Learning Rust for Tauri? PyPulsar is **Python-first** – leverage your existing skills with NumPy, Pandas, ML models, while getting desktop apps that feel native.
+
+- **Zero Dependencies Overhead**: pywebview + aiohttp = minimal footprint
+- **Hot Reload**: Edit HTML/CSS/JS, see changes instantly
+- **Plugins System**: Extend with JSON manifests (tray, notifications, updater)
+- **Cross-Platform**: Windows, macOS, Linux – one codebase
+
+### Quick Comparison
+
+| Feature          | PyPulsar      | Electron      | Tauri         |
+|------------------|---------------|---------------|---------------|
+| **Backend Lang** | Python        | Node.js       | Rust          |
+| **Bundle Size**  | 5-15 MB       | 100-300 MB    | 0.6-3 MB      |
+| **RAM Usage**    | 50-100 MB     | 200+ MB       | <80 MB        |
+| **Security**     | ACL + Payload Validation | CSP (manual) | Dynamic ACL   |
+| **Mobile**       | No (desktop only) | Partial     | Yes           |
+| **Learning Curve** | Low (Python) | Low (JS)     | Medium (Rust) |
+| **CLI**          | `pypulsar create` | `electron-forge` | `create-tauri-app` |
+
+PyPulsar shines for Python devs – build tools, dashboards, ML apps without leaving your comfort zone.
+
+## Installation
+
 ```bash
-git clone https://github.com/YOUR_USERNAME/PyPhoton.git
-cd PyPhoton
-pip install -r requirements.txt.txt
-```
-
-### 🚀 Example Usage
-```python
-from pyphoton import Engine
-
-engine = Engine(debug=True)
-engine.create_window(path="/index.html", title="My Application")
-engine.run()
-
-```
-### 🔌 Plugin System (Coming Soon)
-
-PyPhoton will support a robust plugin architecture, allowing developers to:
-- Easily add new features to applications.
-- Extend Python ↔ JavaScript communication.
-- Dynamically load and unload plugins at runtime.
-- Safely isolate plugins to prevent crashes or security issues.
-- Plugin manifests will define plugin name, version, entry points, and hooks for seamless integration with PyPhoton.
-
-#### Example Plugin Structure
-```
-plugins/
-    my_plugin/
-        __init__.py
-        plugin.json
-        main.py
-        assets/
-
-```
-##### plugin.json example
-```json
-{
-  "name": "MyPlugin",
-  "version": "1.0.0",
-  "entry": "main.py",
-  "hooks": ["on_window_create", "on_event"],
-  "min_engine_version": "1.0.0"
-}
-
-```
-#### 🛡 Safety & Isolation
-
-- Plugins run in a sandboxed environment or isolated thread/process.
-- Only a restricted API is exposed to plugins.
-- Engine validates plugin manifests, versions, and compatibility before loading.
-- Plugin errors are logged centrally and do not crash the main application.
+pip install PyPulsar
