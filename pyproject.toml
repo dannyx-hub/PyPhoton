@@ -49,11 +49,11 @@ Repository = "https://github.com/dannyx-hub/pyphoton"
 Issues = "https://github.com/dannyx-hub/pyphoton/issues"
 
 [project.scripts]
-pyphoton = "pyphoton.cli:app"
+pypulsar = "pypulsar.cli:app"
 
 [tool.setuptools.package-data]
-"pyphoton" = ["templates/**/*"]
+"pypulsar" = ["templates/**/*"]
 
 [tool.setuptools.packages.find]
-include = ["pyphoton*"]
+include = ["pypulsar*"]
 exclude = ["plugins*"]
