@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pypulsar"
-version = "0.1.0"
+version = "0.1.1"
 description = "Modern Python desktop framework – lightweight, secure, beautiful"
 readme = "README.md"
 authors = [{ name = "dannyx-hub", email = "daro322.dp@gmail.com" }]
-license = "MIT"  # ← POPRAWNE: prosty string SPDX (najlepsze rozwiązanie!)
+license = "MIT"
 requires-python = ">=3.9"
 keywords = ["desktop", "gui", "pywebview", "framework", "electron-alternative"]
 
