@@ -8,7 +8,7 @@ import typer
 from typing import Optional
 
 app = typer.Typer(
-    name="PyPhoton",
+    name="PyPulsar",
     help="Modern Python desktop framework - lightweight, secure and build in python",
     add_completion=False,
     no_args_is_help=True
@@ -44,8 +44,8 @@ def create(
     if main_py.exists():
         try:
             content = main_py.read_text(encoding="utf-8")
-            content = content.replace("PyPhoton App", name.replace("-", " ").title())
-            content = content.replace("my-pyphoton-app", name)
+            content = content.replace("PyPulsar App", name.replace("-", " ").title())
+            content = content.replace("my-pypulsar-app", name)
             main_py.write_text(content, encoding="utf-8")
         except Exception as e:
             typer.echo(f"Warning: Could not update main.py: {e}", err=True)
@@ -55,21 +55,21 @@ def create(
     web_dir.mkdir(exist_ok=True)
     if not any(web_dir.iterdir()):
         (web_dir / "index.html").write_text(
-            "<h1 style='text-align:center;margin-top:100px;color:#d4af37;'>Welcome to PyPhoton</h1>",
+            "<h1 style='text-align:center;margin-top:100px;color:#d4af37;'>Welcome to PyPulsar</h1>",
             encoding="utf-8"
         )
 
     typer.secho(f"Project '{name}' created successfully!", fg=typer.colors.GREEN, bold=True)
     typer.echo("\nNext steps:")
     typer.echo(f"  cd {name}")
-    typer.echo("  pyphoton dev      # start in development mode")
-    typer.echo("  pyphoton build    # build native app (.app/.exe)")
+    typer.echo("  pypulsar dev      # start in development mode")
+    typer.echo("  pypulsar build    # build native app (.app/.exe)")
 
 
 @app.command()
 def dev():
     if not Path("main.py").exists():
-        typer.secho("Error: main.py not found – run this command inside a PyPhoton project!", fg=typer.colors.RED, err=True)
+        typer.secho("Error: main.py not found – run this command inside a PyPulsar project!", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
     typer.secho("Starting dev mode...", fg=typer.colors.GREEN)
     subprocess.run([sys.executable, "main.py"])
@@ -179,13 +179,13 @@ def doctor():
     has_main = (Path.cwd() / "main.py").exists()
     has_web = (Path.cwd() / "web").exists()
     if has_main and has_web:
-        add("Project structure", ok, "valid PyPhoton project")
+        add("Project structure", ok, "valid PyPulsar project")
     elif has_main:
         add("Project structure", warn, "main.py found, but missing web/ folder")
     else:
-        add("Project structure", warn, "not inside a PyPhoton project")
+        add("Project structure", warn, "not inside a PyPulsar project")
 
-    typer.secho("\nPyPhoton Doctor – Environment Check", fg=typer.colors.CYAN, bold=True)
+    typer.secho("\nPyPulsar Doctor – Environment Check", fg=typer.colors.CYAN, bold=True)
 
     all_good = True
     for name, status, msg in checks:
@@ -197,10 +197,10 @@ def doctor():
 
     typer.echo("")
     if all_good:
-        typer.secho("Your system is perfectly ready for PyPhoton!", fg=typer.colors.GREEN, bold=True)
-        typer.secho("Run: pyphoton dev", bold=True)
+        typer.secho("Your system is perfectly ready for PyPulsar!", fg=typer.colors.GREEN, bold=True)
+        typer.secho("Run: pypulsar dev", bold=True)
     else:
-        typer.secho("Fix the errors above and run again: pyphoton doctor", fg=typer.colors.YELLOW)
+        typer.secho("Fix the errors above and run again: pypulsar doctor", fg=typer.colors.YELLOW)
 
 @app.callback(invoke_without_command=True)
 def main(
@@ -210,17 +210,17 @@ def main(
     ),
 ):
     """
-    PyPhoton – the modern Python desktop framework
+    PyPulsar – the modern Python desktop framework
 
     Build beautiful, secure, native desktop apps with Python and web technologies.
     """
     if version:
         from importlib.metadata import version, PackageNotFoundError
         try:
-            v = version("pyphoton")
-            typer.echo(f"PyPhoton CLI v{v}")
+            v = version("pypulsar")
+            typer.echo(f"PyPulsar CLI v{v}")
         except PackageNotFoundError:
-            typer.echo("PyPhoton CLI (development version)")
+            typer.echo("PyPulsar CLI (development version)")
         raise typer.Exit()
 
     # Jeśli nie podano żadnej komendy – pokaż help

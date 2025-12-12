@@ -1,7 +1,7 @@
-# PyPhoton Basic Template – dependencies
+# PyPulsar Basic Template – dependencies
 # Run: pip install -r requirements.txt
 
 pywebview>=5.1          # Core – native webview windows
 aiohttp>=3.9            # Built-in local dev server
-typer[all]>=0.12         # Beautiful CLI (pyphoton dev/build)
+typer[all]>=0.12         # Beautiful CLI (pypulsar dev/build)
 watchgod>=0.8           # Optional: auto-restart on file change (macOS/Linux)

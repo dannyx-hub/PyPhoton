@@ -20,7 +20,7 @@ def register(engine):
             notification.notify(
                 title=title,
                 message=message,
-                app_name="PyPhoton",
+                app_name="PyPulsar",
                 app_icon=icon_path,
                 timeout=5
             )

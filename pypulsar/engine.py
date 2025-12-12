@@ -1,11 +1,11 @@
-# pyphoton/engine.py
+# pypulsar/engine.py
 import time
 import asyncio
 import threading
 from aiohttp import web
 import webview
 import os
-from pyphoton.acl import acl
+from pypulsar.acl import acl
 
 class Hooks:
     ON_APP_START = "on_app_start"
@@ -19,7 +19,7 @@ class Api:
 
     def send(self, params):
         if not isinstance(params, dict) or "event" not in params:
-            print("[PyPhoton] Error: api.send() require {event, data}")
+            print("[PyPulsar] Error: api.send() require {event, data}")
             return
 
         # Wrzucamy całą wiadomość do kolejki w Pythonie
@@ -43,7 +43,7 @@ class Engine:
         self.hooks = {value: [] for key, value in Hooks.__dict__.items()
                       if not key.startswith("__")}
 
-        from pyphoton.plugins.plugin_manager import PluginManager
+        from pypulsar.plugins.plugin_manager import PluginManager
         self.plugins = PluginManager()
         self.plugins.set_engine(self)
         self.plugins.discover_plugins()
@@ -69,7 +69,7 @@ class Engine:
                 try:
                     callback(*args, **kwargs)
                 except Exception as e:
-                    print(f"[PyPhoton] Hook error {hook_name}: {e}")
+                    print(f"[PyPulsar] Hook error {hook_name}: {e}")
             threading.Thread(target=run, daemon=True).start()
 
     def _wait_for_server(self, timeout: float = 8.0):
@@ -77,7 +77,7 @@ class Engine:
         while time.time() < deadline and not self._server_ready:
             time.sleep(0.1)
         if not self._server_ready:
-            raise TimeoutError(f"[PyPhoton] Server not start on {self._port}")
+            raise TimeoutError(f"[PyPulsar] Server not start on {self._port}")
 
     def _run_server_and_processor(self):
         async def main():
@@ -90,7 +90,7 @@ class Engine:
             site = web.TCPSite(runner, '127.0.0.1', self._port)
             await site.start()
             self._server_ready = True
-            print(f"[PyPhoton] Server started → http://127.0.0.1:{self._port}")
+            print(f"[PyPulsar] Server started → http://127.0.0.1:{self._port}")
 
             await self._start_message_processor()
 
@@ -100,23 +100,23 @@ class Engine:
         asyncio.run(main())
 
     async def _start_message_processor(self):
-        print("[PyPhoton] Message processor started")
+        print("[PyPulsar] Message processor started")
         while True:
             try:
                 message = await self.message_queue.get()
                 event_name = message.get("event")
                 data = message.get("data", {})
 
-                print(f"[PyPhoton] Get event: {event_name}")
+                print(f"[PyPulsar] Get event: {event_name}")
                 self.emit_hook(Hooks.ON_EVENT, event_name, data)
 
                 self.message_queue.task_done()
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"[PyPhoton] Message Error: {e}")
+                print(f"[PyPulsar] Message Error: {e}")
 
-    def create_window(self, path="/", title="PyPhoton", width=1000, height=700, resizable=True):
+    def create_window(self, path="/", title="PyPulsar", width=1000, height=700, resizable=True):
         if self._serve:
             url = f"http://127.0.0.1:{self._port}{path}"
         else:
