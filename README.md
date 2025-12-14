@@ -1,4 +1,4 @@
-<div align="center">
+
 # PyPulsar
 [![PyPI](https://img.shields.io/pypi/v/PyPulsar.svg)](https://pypi.org/project/PyPulsar/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,7 +13,6 @@ Build native-feeling desktop apps with HTML/CSS/JS frontend and full Python back
 - 🔒 **Secure by Default**: Built-in ACL (Access Control List)
 - 🛠️ **Easy CLI**: `pypulsar create my-app && pypulsar dev`
 - 🎨 **Native WebView**: Cocoa (macOS), Edge (Windows), GTK (Linux)
-</div>
 
 ## Why PyPulsar?
 
