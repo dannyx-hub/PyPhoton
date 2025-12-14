@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pypulsar"
-version = "0.1.1"
+version = "0.1.2"
 description = "Modern Python desktop framework – lightweight, secure, beautiful"
 readme = "README.md"
 authors = [{ name = "dannyx-hub", email = "daro322.dp@gmail.com" }]
