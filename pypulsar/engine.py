@@ -1,4 +1,3 @@
-# pypulsar/engine.py
 import time
 import asyncio
 import threading
@@ -6,28 +5,13 @@ from aiohttp import web
 import webview
 import os
 from pypulsar.acl import acl
+from pypulsar.window_manager import WindowManager
+from pypulsar.ipc.api import Api
 
 class Hooks:
     ON_APP_START = "on_app_start"
     ON_WINDOW_CREATE = "on_window_create"
     ON_EVENT = "on_event"
-
-
-class Api:
-    def __init__(self, engine):
-        self.engine = engine
-
-    def send(self, params):
-        if not isinstance(params, dict) or "event" not in params:
-            print("[PyPulsar] Error: api.send() require {event, data}")
-            return
-
-        # Wrzucamy całą wiadomość do kolejki w Pythonie
-        asyncio.run_coroutine_threadsafe(
-            self.engine.message_queue.put(params),
-            self.engine.loop
-        )
-
 
 class Engine:
     def __init__(self, debug=False, serve=True, port=8000, webroot="web"):
@@ -37,6 +21,9 @@ class Engine:
         self._webroot = webroot
         self._server_ready = False
         self.loop = None
+        self.child_windows = []
+        self.parent_window = None
+        self.window_manager = WindowManager(self, Hooks)
 
         self.message_queue = asyncio.Queue()
 
@@ -106,9 +93,10 @@ class Engine:
                 message = await self.message_queue.get()
                 event_name = message.get("event")
                 data = message.get("data", {})
+                window_id = message.get("window_id")
 
                 print(f"[PyPulsar] Get event: {event_name}")
-                self.emit_hook(Hooks.ON_EVENT, event_name, data)
+                self.emit_hook(Hooks.ON_EVENT, event_name, data, window_id)
 
                 self.message_queue.task_done()
             except asyncio.CancelledError:
@@ -117,43 +105,30 @@ class Engine:
                 print(f"[PyPulsar] Message Error: {e}")
 
     def create_window(self, path="/", title="PyPulsar", width=1000, height=700, resizable=True):
-        if self._serve:
-            url = f"http://127.0.0.1:{self._port}{path}"
-        else:
-            url = f"file://{os.path.abspath(os.path.join(self._webroot, path.lstrip('/')))}"
+        url = f"http://127.0.0.1:{self._port}{path}"
+        return self.window_manager.create_window(is_main=True, url=url, title=title, width=width,
+                                          height=height, resizable=resizable)
 
-        api = Api(self)
+    def create_child_window(self, path="/", title="PyPulsarChild", width=1000, height=700, resizable=True):
+        url = f"http://127.0.0.1:{self._port}{path}"
+        return self.window_manager.create_window(is_main=False, url=url, title=title,
+                                          width=width, height=height, resizable=resizable)
 
-        window = webview.create_window(
-            title=title,
-            url=url,
-            width=width,
-            height=height,
-            resizable=resizable,
-            js_api=api,
-            text_select=True,
-        )
+    def close_window(self, window_id: str):
+        self.window_manager.close_window(window_id)
 
-        @window.expose
-        def pywebview_message(event: str, data=None):
-            if data is None:
-                data = {}
-            if not acl.validate(event, data):
-                print(f"[ACL] Event Banned {event}")
-                window.evaluate_js(f"console.warn('ACL: Event Banned {event}')")
-                return
-            message = {"event": event, "data": data}
-            asyncio.run_coroutine_threadsafe(
-                self.message_queue.put(message),
-                self.loop
-            )
+    def send_to_window(self, window_id: str, js_code: str):
+        self.window_manager.evaluate_js(window_id, js_code)
 
-        self.emit_hook(Hooks.ON_WINDOW_CREATE, window)
-        return window
+    def get_window(self, window_id: str):
+        return self.window_manager.get_window(window_id)
+
 
     def run(self):
         self.emit_hook(Hooks.ON_APP_START)
         webview.start(debug=self.debug, http_server=not self._serve)
 
-    # def quit(self):
-    #     webview.destroy_all_windows()
+    def quit(self):
+        windows = self.window_manager.windows
+        for window in windows:
+            window.destroy()
