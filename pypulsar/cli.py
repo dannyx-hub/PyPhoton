@@ -101,11 +101,12 @@ def plugin_install(
 def create(
     name: str = typer.Argument(..., help="Name of the new project"),
     template: str = typer.Option(
-        "basic", "--template", "-t", help="Template to use: basic, vue, react, svelte"
+        "basic", "--template", "-t", help="Template to use: basic, vue, react, svelte",
+
     ),
+    venv: bool = typer.Option(False, "--venv", help="craetes virtual enviroment")
 ):
     project_dir = Path(name)
-
     if project_dir.exists():
         typer.secho(f"Project '{name}' already exists!", fg=typer.colors.RED, err=True)
         raise typer.Exit(1)
@@ -130,8 +131,6 @@ def create(
             main_py.write_text(content, encoding="utf-8")
         except Exception as e:
             typer.echo(f"Warning: Could not update main.py: {e}", err=True)
-
-    # Upewniamy się, że folder web istnieje (na wszelki wypadek)
     web_dir = project_dir / "web"
     web_dir.mkdir(exist_ok=True)
     if not any(web_dir.iterdir()):
@@ -139,6 +138,30 @@ def create(
             "<h1 style='text-align:center;margin-top:100px;color:#d4af37;'>Welcome to PyPulsar</h1>",
             encoding="utf-8"
         )
+    if venv:
+        venv_path = project_dir / "venv"
+        requirements_path = project_dir / "requirements.txt"
+        typer.echo("Creating virutal env....")
+        try:
+            subprocess.check_call([sys.executable, "-m", "venv", str(venv_path)])
+        except subprocess.CalledProcessError as e:
+            typer.secho(f"Virtual enviroment error: {e}", fg=typer.colors.RED, bold=True)
+            raise typer.Exit(1)
+        typer.echo("Installing dependecies from requirements.txt")
+        if sys.platform == "win32":
+            pip_path = venv_path / "Scripts" / "pip"
+            activate_cmd = f"{project_dir}\\Scrpits\\activate"
+        else:
+            pip_path = venv_path / "bin" / "pip"
+            activate_cmd = f"source {project_dir}/venv/bin/activate"
+        try:
+            subprocess.check_call([str(pip_path), "install", "-r", str(requirements_path)])
+        except subprocess.CalledProcessError as e:
+            typer.secho(f"Installing dependecies error: {e}", fg=typer.colors.RED, bold=True)
+            raise typer.Exit(1)
+        
+        typer.secho(f"Virutal enviroment installed sucessfully in {venv_path}!", fg=typer.colors.GREEN)
+        typer.secho(f"To activate enter: {activate_cmd}", fg=typer.colors.GREEN)
 
     typer.secho(f"Project '{name}' created successfully!", fg=typer.colors.GREEN, bold=True)
     typer.echo("\nNext steps:")
